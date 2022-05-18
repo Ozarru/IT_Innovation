@@ -1,0 +1,10 @@
+def auth_gen_user(school: dict, current_user: dict):
+    if school.owner_id != current_user.id or current_user.is_super_admin != True:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail=f"Not Authaurized to perform requested action")
+
+
+def auth_super_user(current_user: dict):
+    if current_user.is_super_admin != True:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail=f"Not Authaurized to perform requested action")
