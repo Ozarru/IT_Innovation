@@ -8,12 +8,12 @@ router = APIRouter(prefix='/users', tags=['Users'])
 
 
 @router.get('/', response_model=List[schemas.UserRes])
-def get_users(db: Session = Depends(get_db), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
-    # users = db.query(models.User).all()                    #gets all available results
+def get_users(db: Session = Depends(get_db), limit: int = 0, skip: int = 0, search: Optional[str] = ""):
+    users = db.query(models.User).all()  # gets all available results
     # users = db.query(models.User).limit(limit).all()       #limits to x number of results
     # users = db.query(models.User).offset(skip).all()       #skips x number of results
-    users = db.query(models.User).filter(
-        models.School.name.contains(search)).limit(limit).offset(skip).all()
+    # users = db.query(models.User).filter(
+    #     models.User.name.contains(search)).limit(limit).offset(skip).all()
     return users
 
 

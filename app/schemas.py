@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     name: str
     email: EmailStr
     password: str
-    phone: Optional[int] = None
+    phone: Optional[str] = None
     admin_level:  Optional[int] = 0
     is_super_admin: Optional[boolean] = False
     is_admin: Optional[boolean] = False
@@ -70,45 +70,45 @@ class SchoolRes(BaseModel):
     id: int
     name: str
     description: str
-    owner_id: int
-    owner: UserRes
+    admin_id: int
+    admin: UserRes
 
     class Config:
         orm_mode = True
 
 
 # -------------Classroom--------------------------------
-# class ClassroomBase (BaseModel):
-#     name: str
-#     description: Optional[str] = None
-#     class_size: Optional[int] = None
+class ClassroomBase (BaseModel):
+    name: str
+    description: Optional[str] = None
+    class_size: Optional[int] = None
 
 
-# class ClassroomCreate(ClassroomBase):
-#     pass
+class ClassroomCreate(ClassroomBase):
+    pass
 
 
-# class ClassroomRes(ClassroomBase):
-#     pass
-#     school_id: int
+class ClassroomRes(ClassroomBase):
+    pass
+    school_id: int
 
-#     class Config:
-#         orm_mode = True
+    class Config:
+        orm_mode = True
 
 
 # ----------------Course--------------------------------
-# class CourseBase (BaseModel):
-#     name: str
-#     description: Optional[str] = None
-#     credit: Optional[int] = None
+class CourseBase (BaseModel):
+    name: str
+    description: Optional[str] = None
+    credit: Optional[int] = None
 
 
-# class CourseCreate(CourseBase):
-#     pass
+class CourseCreate(CourseBase):
+    pass
 
 
-# class CourseRes(CourseBase):
-#     pass
+class CourseRes(CourseBase):
+    pass
 
-#     class Config:
-#         orm_mode = True
+    class Config:
+        orm_mode = True

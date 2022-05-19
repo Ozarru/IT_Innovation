@@ -12,7 +12,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
-    phone = Column(Integer,  unique=True, nullable=True)
+    phone = Column(String, unique=True, nullable=True)
     address = Column(String, nullable=True)
     is_admin = Column(Boolean, server_default='FALSE', nullable=False)
     is_student = Column(Boolean, server_default='FALSE', nullable=False)
@@ -32,7 +32,7 @@ class School(Base):
     name = Column(String, nullable=False)
     address = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=True)
-    phone = Column(Integer, nullable=True)
+    phone = Column(String, unique=True, nullable=True)
     description = Column(String, nullable=True)
     rccm_code = Column(Integer, nullable=True)
     nif_code = Column(Integer, nullable=True)
@@ -43,10 +43,8 @@ class School(Base):
     term_alloction = Column(String, nullable=False)
     is_accredited = Column(Boolean, server_default='FALSE', nullable=False)
     admin_id = Column(Integer, ForeignKey(
-        'users.id',  ondelete="CASCADE"), nullable=False)
-    owner_id = Column(Integer, ForeignKey(
-        'users.id',  ondelete="CASCADE"), nullable=True)
-    owner = relationship('User')
+        'users.id', ondelete="CASCADE"), nullable=False)
+    admin = relationship('User')
     registered_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'),
                            nullable=False)
 

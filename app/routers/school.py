@@ -9,12 +9,11 @@ router = APIRouter(prefix='/schools', tags=['Schools'])
 
 
 @router.get('/', response_model=List[schemas.SchoolRes])
-def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 10):
+def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20):
     if current_user.is_super_admin != True:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail=f"Not Authorized to perform requested action")
-    # schools = db.query(models.School).filter(models.School.owner_id == current_user.id).all()
-    print(limit)
+    # schools = db.query(models.School).filter(models.School.admin_id == current_user.id).all()
     # schools = db.query(models.School).all()
     schools = db.query(models.School).limit(limit).all()
     return schools
@@ -27,7 +26,7 @@ def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depe
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"school with id: {id} was not found")
-    if school.owner_id != current_user.id and current_user.is_super_admin != True:
+    if school.admin_id != current_user.id and current_user.is_super_admin != True:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail=f"Not Authorized to perform requested action")
     return school
@@ -35,7 +34,7 @@ def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depe
 
 @router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.SchoolRes)
 def create_schools(school: schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    new_school = models.School(owner_id=current_user.id, **school.dict())
+    new_school = models.School(admin_id=current_user.id, **school.dict())
     db.add(new_school)
     db.commit()
     db.refresh(new_school)
@@ -49,7 +48,7 @@ def delete_school(id: int, db: Session = Depends(get_db), current_user: dict = D
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"school with id: {id} was not found")
-    if school.owner_id != current_user.id and current_user.is_super_admin != True:
+    if school.admin_id != current_user.id and current_user.is_super_admin != True:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail=f"Not Authorized to perform requested action")
 
@@ -65,7 +64,7 @@ def update_school(id: int, updated_school: schemas.SchoolCreate, db: Session = D
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"school with id: {id} was not found")
-    if school.owner_id != current_user.id and current_user.is_super_admin != True:
+    if school.admin_id != current_user.id and current_user.is_super_admin != True:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail=f"Not Authorized to perform requested action")
 
