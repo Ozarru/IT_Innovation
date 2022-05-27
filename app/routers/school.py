@@ -13,8 +13,6 @@ def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oaut
     if current_user.is_super_admin != True:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail=f"Not Authorized to perform requested action")
-    # schools = db.query(models.School).filter(models.School.admin_id == current_user.id).all()
-    # schools = db.query(models.School).all()
     schools = db.query(models.School).limit(limit).all()
     return schools
 
@@ -34,6 +32,16 @@ def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depe
 
 @router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.SchoolRes)
 def create_schools(school: schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+    school_query = db.query(models.School).filter(
+        models.School.admin_id == current_user.id)
+    school_exist = school_query.first()
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail=f"Not Authorized to perform requested action")
+    if school_exist:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Admin can only have one school.")
+
     new_school = models.School(admin_id=current_user.id, **school.dict())
     db.add(new_school)
     db.commit()

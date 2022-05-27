@@ -6,13 +6,11 @@ from pydantic import BaseModel, EmailStr
 
 # ---------------User--------------------------------
 class UserBase(BaseModel):
-    name: str
+    firstname: str
+    lastname: str
     email: EmailStr
     password: str
     phone: Optional[str] = None
-    admin_level:  Optional[int] = 0
-    is_super_admin: Optional[boolean] = False
-    is_admin: Optional[boolean] = False
     registered_at: Optional[datetime] = None
 
 
@@ -22,9 +20,10 @@ class UserCreate(UserBase):
 
 class UserRes(BaseModel):
     id: int
-    name: str
+    firstname: str
+    lastname: str
     email: EmailStr
-    phone: int
+    phone: str
 
     class Config:
         orm_mode = True
@@ -44,7 +43,22 @@ class TokenData(BaseModel):
     id: Optional[str] = None
 
 
+# -------------Admin--------------------------------
+class Admin(UserBase):
+    admin_id: int
+    admin_level: int = 128
+    is_admin: boolean = True
+    is_staff: boolean = True
+    is_owner: boolean = False
+    is_super_admin: boolean = False
+
+
+class AdminRes(UserRes):
+    pass
+
 # -------------School--------------------------------
+
+
 class SchoolBase (BaseModel):
     name: str
     address: str
@@ -56,9 +70,7 @@ class SchoolBase (BaseModel):
     bank_name: Optional[str] = None
     bank_acc_name: Optional[str] = None
     bank_acc_num: Optional[int] = None
-    edu_level: str
-    term_alloction: str
-    is_accredited: Optional[boolean] = False
+    is_active: Optional[boolean] = False
     registered_at: Optional[datetime] = None
 
 
