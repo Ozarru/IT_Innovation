@@ -84,6 +84,21 @@ class Grade(Base):
     edu_phase_id = Column(Integer, ForeignKey(
         'edu_phases.id', ondelete="CASCADE"), nullable=False)
 
+
+# class Student(Base):
+#     __tablename__ = 'students'
+
+#     id = Column(Integer, primary_key=True, nullable=False)
+#     is_student = Column(Boolean, ForeignKey(
+#         'users.is_student', ondelete="CASCADE"), nullable=False, server_default='TRUE')
+#     user_id = Column(Integer, ForeignKey(
+#         'users.id', ondelete="CASCADE"), nullable=False)
+#     class_id = Column(Integer, ForeignKey(
+#         'classrooms.id', ondelete="CASCADE"), nullable=False)
+#     school_id = Column(Integer, ForeignKey(
+#         'schools.id', ondelete="CASCADE"), nullable=False)
+
+
 # class Course(Base):
 #     __tablename__ = 'courses'
 
@@ -182,19 +197,5 @@ class Grade(Base):
 #         'users.is_parent', ondelete="CASCADE"), nullable=False, server_default='TRUE')
 #     user_id = Column(Integer, ForeignKey(
 #         'users.id', ondelete="CASCADE"), nullable=False)
-#     school_id = Column(Integer, ForeignKey(
-#         'schools.id', ondelete="CASCADE"), nullable=False)
-
-
-# class Student(Base):
-#     __tablename__ = 'students'
-
-#     id = Column(Integer, primary_key=True, nullable=False)
-#     is_student = Column(Boolean, ForeignKey(
-#         'users.is_student', ondelete="CASCADE"), nullable=False, server_default='TRUE')
-#     user_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), nullable=False)
-#     class_id = Column(Integer, ForeignKey(
-#         'classrooms.id', ondelete="CASCADE"), nullable=False)
 #     school_id = Column(Integer, ForeignKey(
 #         'schools.id', ondelete="CASCADE"), nullable=False)

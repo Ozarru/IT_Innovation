@@ -89,7 +89,27 @@ class SchoolRes(BaseModel):
         orm_mode = True
 
 
+# -------------EduStage--------------------------------
+class EduStageBase (BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class EduStageCreate(EduStageBase):
+    pass
+
+
+class EduStageRes(EduStageBase):
+    id: int
+    school_id: int
+    school: SchoolRes
+
+    class Config:
+        orm_mode = True
+
 # -------------Classroom--------------------------------
+
+
 class ClassroomBase (BaseModel):
     name: str
     description: Optional[str] = None

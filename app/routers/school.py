@@ -11,8 +11,8 @@ router = APIRouter(prefix='/schools', tags=['Schools'])
 @router.get('/', response_model=List[schemas.SchoolRes])
 def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20):
     if current_user.is_super_admin != True:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Insufficient authentication credentials.")
     schools = db.query(models.School).limit(limit).all()
     return schools
 
@@ -25,8 +25,8 @@ def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depe
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"school with id: {id} was not found")
     if school.admin_id != current_user.id and current_user.is_super_admin != True:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Insufficient authentication credentials.")
     return school
 
 
@@ -36,8 +36,8 @@ def create_schools(school: schemas.SchoolCreate, db: Session = Depends(get_db), 
         models.School.admin_id == current_user.id)
     school_exist = school_query.first()
     if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Insufficient authentication credentials.")
     if school_exist:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Admin can only have one school.")

@@ -10,8 +10,8 @@ router = APIRouter(prefix='/users', tags=['Users'])
 @router.get('/', response_model=List[schemas.UserRes])
 def get_users(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 0, offset: int = 0, search: Optional[str] = ""):
     if current_user.is_super_admin != True:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! insufficient authentication credentials ")
     users = db.query(models.User).all()
     return users
 
@@ -29,7 +29,7 @@ def get_user(id: int, db: Session = Depends(get_db), current_user: dict = Depend
 def create_users(user: schemas.UserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     if not current_user.is_super_admin and not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Not Authorized to perform requested action")
+                            detail=f"Forbidden!!! insufficient authentication credentials ")
     hashed_pass = utils.hash(user.password)
     user.password = hashed_pass
     new_user = models.User(**user.dict())
@@ -48,8 +48,8 @@ def delete_user(id: int, db: Session = Depends(get_db), current_user: dict = Dep
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"user with id: {id} was not found")
     if not current_user.is_super_admin and not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! insufficient authentication credentials ")
 
     user_query.delete(synchronize_session=False)
     db.commit()
@@ -64,8 +64,8 @@ def update_user(id: int, updated_user: schemas.UserCreate, db: Session = Depends
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"user with id: {id} was not found")
     if not current_user.is_super_admin and not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! insufficient authentication credentials ")
 
     user_query.update(updated_user.dict(), synchronize_session=False)
     db.commit()
