@@ -8,23 +8,30 @@ from .. import models, schemas, oauth2
 router = APIRouter(prefix='/schools', tags=['Schools'])
 
 
-@router.get('/', response_model=List[schemas.SchoolRes])
-def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20):
-    if current_user.is_super_admin != True:
+@router.get('/', status_code=status.HTTP_200_OK, response_model=List[schemas.SchoolRes])
+def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 50, offset: int = 0):
+    if current_user.role_id == 1:
+        schools = db.query(models.School).limit(limit).offset(offset).all()
+        return schools
+    elif current_user.role_id == 2:
+        schools = db.query(models.School).filter(
+            models.School.manager_id == current_user.id).all()
+        if not schools:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"No school was found with you as the manager!")
+        return schools
+    else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
-    schools = db.query(models.School).limit(limit).all()
-    return schools
 
 
-@router.get('/{id}', response_model=schemas.SchoolRes)
+@router.get('/{id}', status_code=status.HTTP_200_OK, response_model=schemas.SchoolRes)
 def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    school_query = db.query(models.School).filter(models.School.id == id)
-    school = school_query.first()
+    school = db.query(models.School).filter(models.School.id == id).first()
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"school with id: {id} was not found")
-    if school.admin_id != current_user.id and current_user.is_super_admin != True:
+                            detail=f"No school with id: {id} was found")
+    if current_user.role_id != 1 and school.manager_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
     return school
@@ -32,17 +39,17 @@ def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depe
 
 @router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.SchoolRes)
 def create_schools(school: schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    school_query = db.query(models.School).filter(
-        models.School.admin_id == current_user.id)
-    school_exist = school_query.first()
-    if not current_user.is_admin:
+    school_exist = db.query(models.School).filter(
+        models.School.manager_id == current_user.id).first()
+    if current_user.role_id != 2:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
     if school_exist:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Admin can only have one school.")
 
-    new_school = models.School(admin_id=current_user.id, **school.dict())
+    new_school = models.School(
+        manager_id=current_user.id, **school.dict())
     db.add(new_school)
     db.commit()
     db.refresh(new_school)
@@ -55,10 +62,10 @@ def delete_school(id: int, db: Session = Depends(get_db), current_user: dict = D
     school = school_query.first()
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"school with id: {id} was not found")
-    if school.admin_id != current_user.id and current_user.is_super_admin != True:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+                            detail=f"No school with id: {id} was found")
+    if current_user.role_id != 1 and school.manager_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Insufficient authentication credentials.")
 
     school_query.delete(synchronize_session=False)
     db.commit()
@@ -71,10 +78,10 @@ def update_school(id: int, updated_school: schemas.SchoolCreate, db: Session = D
     school = school_query.first()
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"school with id: {id} was not found")
-    if school.admin_id != current_user.id and current_user.is_super_admin != True:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail=f"Not Authorized to perform requested action")
+                            detail=f"No school with id: {id} was found")
+    if current_user.role_id != 1 and school.manager_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Insufficient authentication credentials.")
 
     school_query.update(updated_school.dict(), synchronize_session=False)
     db.commit()

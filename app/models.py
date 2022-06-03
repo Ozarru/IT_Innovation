@@ -1,7 +1,8 @@
 
+from enum import unique
 from .config.database import Base
-from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Integer, String, true
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 
@@ -11,21 +12,37 @@ class User(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     firstname = Column(String, nullable=False)
     lastname = Column(String, nullable=False)
+    birth_date = Column(String, nullable=True)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     phone = Column(String, unique=True, nullable=True)
     address = Column(String, nullable=True)
-    is_student = Column(Boolean, server_default='FALSE', nullable=False)
-    is_parent = Column(Boolean, server_default='FALSE', nullable=False)
-    is_staff = Column(Boolean, server_default='FALSE', nullable=False)
-    is_admin = Column(Boolean, server_default='FALSE', nullable=False)
-    is_owner = Column(Boolean, server_default='FALSE', nullable=False)
-    is_super_admin = Column(Boolean, server_default='FALSE', nullable=False)
-    admin_level = Column(Integer, nullable=True, server_default=text('0'))
-    registered_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'),
-                           nullable=False)
-    school = relationship('School', back_populates='admin',
-                          uselist=False, cascade='all, delete')
+    is_active = Column(Boolean, server_default='FALSE', nullable=False)
+    registered_at = Column(TIMESTAMP(timezone=True),
+                           server_default=text('now()'))
+    last_login = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
+    role_id = Column(Integer, ForeignKey(
+        'roles.id', ondelete="CASCADE"), nullable=True)
+    role = relationship('Role', backref="users")
+    school_id = Column(Integer, ForeignKey(
+        'schools.id', ondelete="CASCADE"), nullable=True)
+    school = relationship('School', backref="users")
+
+
+class Role(Base):
+    __tablename__ = 'roles'
+    id = Column(Integer, primary_key=True, nullable=False)
+    name = Column(String, nullable=False)
+    sec_level = Column(Integer, server_default='0', nullable=False)
+
+
+class Manager(Base):
+    __tablename__ = 'managers'
+    id = Column(Integer, primary_key=True, nullable=False)
+    is_manager = Column(Boolean, nullable=False)
+    user_id = Column(Integer, ForeignKey(
+        'users.id', ondelete="CASCADE"), primary_key=True, unique=true, nullable=False)
+    user = relationship('User', backref=backref("manager", uselist=False))
 
 
 class School(Base):
@@ -41,14 +58,13 @@ class School(Base):
     nif_code = Column(Integer, nullable=True)
     bank_name = Column(String, nullable=True)
     bank_acc_name = Column(String, nullable=True)
-    bank_acc_num = Column(BigInteger, nullable=True)
-    edu_stages = relationship('EduStage', backref='school')
+    bank_acc_num = Column(String, unique=True, nullable=True)
     is_active = Column(Boolean, server_default='FALSE', nullable=False)
     registered_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'),
                            nullable=False)
-    admin_id = Column(Integer, ForeignKey(
-        'users.id', ondelete="CASCADE"), primary_key=True, nullable=False)
-    admin = relationship('User', back_populates='school')
+    manager_id = Column(Integer, ForeignKey("managers.user_id"),
+                        primary_key=True, unique=True, nullable=False)
+    manager = relationship('Manager', backref=backref("school", uselist=False))
 
 
 class EduStage(Base):
@@ -59,7 +75,7 @@ class EduStage(Base):
     description = Column(String, nullable=False)
     school_id = Column(Integer, ForeignKey(
         'schools.id', ondelete="CASCADE"), nullable=False)
-    edu_phases = relationship('EduPhase', backref='edu_stage')
+    school = relationship('School', backref="edu_stages")
 
 
 class EduPhase(Base):
@@ -71,7 +87,7 @@ class EduPhase(Base):
     edu_calendar = Column(String, nullable=False)
     edu_stage_id = Column(Integer, ForeignKey(
         'edu_stages.id', ondelete="CASCADE"), nullable=False)
-    grades = relationship('Grade', backref='edu_phase')
+    edu_stage = relationship('EduStage', backref="edu_phases")
 
 
 class Grade(Base):
@@ -83,20 +99,7 @@ class Grade(Base):
     class_size = Column(Integer, nullable=False, default=0)
     edu_phase_id = Column(Integer, ForeignKey(
         'edu_phases.id', ondelete="CASCADE"), nullable=False)
-
-
-# class Student(Base):
-#     __tablename__ = 'students'
-
-#     id = Column(Integer, primary_key=True, nullable=False)
-#     is_student = Column(Boolean, ForeignKey(
-#         'users.is_student', ondelete="CASCADE"), nullable=False, server_default='TRUE')
-#     user_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), nullable=False)
-#     class_id = Column(Integer, ForeignKey(
-#         'classrooms.id', ondelete="CASCADE"), nullable=False)
-#     school_id = Column(Integer, ForeignKey(
-#         'schools.id', ondelete="CASCADE"), nullable=False)
+    edu_phase = relationship('EduPhase', backref="grades")
 
 
 # class Course(Base):
@@ -121,81 +124,5 @@ class Grade(Base):
 #     coefficient = Column(Integer, nullable=False, default=1)
 #     class_id = Column(Integer, ForeignKey(
 #         'classrooms.id', ondelete="CASCADE"), nullable=False)
-#     school_id = Column(Integer, ForeignKey(
-#         'schools.id', ondelete="CASCADE"), nullable=False)
-
-
-# ----------------------People---------------------------------------------------
-
-# class SuperAdmin(User):
-#     __tablename__ = 'superadmins'
-
-#     admin_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), primary_key=True, nullable=False)
-#     is_super_admin = Column(Boolean, server_default='TRUE',
-#                             primary_key=True, nullable=False)
-#     admin_level = Column(Integer, nullable=False, server_default=text('256'))
-
-
-# class Owner(User):
-#     __tablename__ = 'owners'
-
-#     admin_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), primary_key=True, nullable=False)
-#     is_staff = Column(Boolean, server_default='FALSE', nullable=False)
-#     is_admin = Column(Boolean, server_default='TRUE', nullable=False)
-#     is_owner = Column(Boolean, server_default='TRUE', nullable=False)
-#     admin_level = Column(Integer, nullable=True, server_default=text('256'))
-
-
-# class Admin(User):
-#     __tablename__ = 'admins'
-
-#     admin_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), primary_key=True, nullable=False)
-#     is_staff = Column(Boolean, server_default='TRUE', nullable=False)
-#     is_admin = Column(Boolean, server_default='TRUE', nullable=False)
-#     is_owner = Column(Boolean, server_default='FALSE', nullable=False)
-#     is_super_admin = Column(Boolean, server_default='FALSE', nullable=False)
-#     admin_level = Column(Integer, nullable=True, server_default=text('128'))
-
-
-# class Staff(User):
-#     staff_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), primary_key=True, nullable=False)
-#     name = Column(String, nullable=False)
-#     address = Column(String, nullable=False)
-#     email = Column(String, unique=True, nullable=True)
-#     phone = Column(String, unique=True, nullable=True)
-#     is_staff = Column(Boolean, server_default='TRUE', nullable=False)
-#     employer_id = Column(Integer, ForeignKey(
-#         'admins.admin_id', ondelete="CASCADE"), nullable=False)
-#     employer = relationship('Admin')
-#     school_id = Column(Integer, ForeignKey(
-#         'schools.id', ondelete="CASCADE"), nullable=False)
-#     school = relationship('School')
-#     admin_level = Column(Integer, nullable=True, server_default=text('64'))
-
-# class Staff(Base):
-#     __tablename__ = 'staff'
-
-#     id = Column(Integer, primary_key=True, nullable=False)
-#     is_staff = Column(Boolean, ForeignKey(
-#         'users.is_staff', ondelete="CASCADE"), unique=True, nullable=False, server_default='TRUE')
-#     user_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), nullable=False)
-#     school_id = Column(Integer, ForeignKey(
-#         'schools.id', ondelete="CASCADE"), nullable=False)
-#     is_academic = Column(Boolean, server_default='TRUE', nullable=False)
-
-
-# class Parent(Base):
-#     __tablename__ = 'parents'
-
-#     id = Column(Integer, primary_key=True, nullable=False)
-#     is_parent = Column(Boolean, ForeignKey(
-#         'users.is_parent', ondelete="CASCADE"), nullable=False, server_default='TRUE')
-#     user_id = Column(Integer, ForeignKey(
-#         'users.id', ondelete="CASCADE"), nullable=False)
 #     school_id = Column(Integer, ForeignKey(
 #         'schools.id', ondelete="CASCADE"), nullable=False)
