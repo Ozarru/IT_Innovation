@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routers import manager, school, edu_stage, classroom, course, user, auth, staff, student
+from .routers import manager, school, edu_stage, classroom, course, auth, staff, student, parent
 from .admin import superuser
 from .config import config
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,11 +28,11 @@ app.add_middleware(
 app.include_router(school.router)
 app.include_router(classroom.router)
 app.include_router(course.router)
-app.include_router(user.router)
 app.include_router(edu_stage.router)
 app.include_router(auth.router)
 app.include_router(manager.router)
 app.include_router(student.router)
+app.include_router(parent.router)
 app.include_router(staff.router)
 app.include_router(superuser.router)
 

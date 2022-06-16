@@ -45,8 +45,8 @@ def create_schools(school: schemas.SchoolCreate, db: Session = Depends(get_db), 
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
     if school_exist:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Forbidden!!! Admin can only have one school.")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Conflict!!! Admin already has a school, therefore cannot create another school.")
 
     new_school = models.School(
         manager_id=current_user.id, **school.dict())
@@ -58,8 +58,7 @@ def create_schools(school: schemas.SchoolCreate, db: Session = Depends(get_db), 
 
 @router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_school(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    school_query = db.query(models.School).filter(models.School.id == id)
-    school = school_query.first()
+    school = db.query(models.School).filter(models.School.id == id).first()
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"No school with id: {id} was found")
@@ -67,15 +66,14 @@ def delete_school(id: int, db: Session = Depends(get_db), current_user: dict = D
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
 
-    school_query.delete(synchronize_session=False)
+    school.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put('/{id}')
 def update_school(id: int, updated_school: schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    school_query = db.query(models.School).filter(models.School.id == id)
-    school = school_query.first()
+    school = db.query(models.School).filter(models.School.id == id).first()
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"No school with id: {id} was found")
@@ -83,6 +81,6 @@ def update_school(id: int, updated_school: schemas.SchoolCreate, db: Session = D
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
 
-    school_query.update(updated_school.dict(), synchronize_session=False)
+    school.update(updated_school.dict(), synchronize_session=False)
     db.commit()
     return school

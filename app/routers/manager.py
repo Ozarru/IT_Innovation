@@ -7,7 +7,7 @@ from app import models, schemas, utils, oauth2
 router = APIRouter(prefix='/managers', tags=['Managers'])
 
 
-@router.get('/', response_model=List[schemas.UserRes])
+@router.get('/', response_model=List[schemas.GenUserRes])
 def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 0, offset: int = 0, search: Optional[str] = ""):
     if current_user.role_id != 1:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -18,7 +18,7 @@ def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oau
     return managers
 
 
-@router.get('/{id}', response_model=schemas.UserRes)
+@router.get('/{id}', response_model=schemas.GenUserRes)
 def get_manager(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     manager = db.query(models.User).filter(
         models.User.role_id == 2, models.User.id == id).first()
@@ -31,12 +31,12 @@ def get_manager(id: int, db: Session = Depends(get_db), current_user: dict = Dep
     return manager
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.UserRes)
-def create_managers(user: schemas.TopUserCreate, db: Session = Depends(get_db)):
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.GenUserRes)
+def create_managers(user: schemas.GenUserCreate, db: Session = Depends(get_db)):
 
     hashed_pass = utils.hash(user.password)
     user.password = hashed_pass
-    new_user = models.User(**user.dict())
+    new_user = models.User(role_id=2, **user.dict())
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -44,24 +44,25 @@ def create_managers(user: schemas.TopUserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
-@router.post('/link_manager', status_code=status.HTTP_201_CREATED, response_model=schemas.ManagerRes)
-def link_manager(manager: schemas.ManagerCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    manager_exist = db.query(models.Manager).filter(
+@router.post('/activate', status_code=status.HTTP_201_CREATED, response_model=schemas.ManagerRes)
+def activate_manager(manager: schemas.ManagerActivate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+    manager_exists = db.query(models.Manager).filter(
         models.Manager.user_id == current_user.id).first()
-    if current_user.role_id != 1 and current_user.role_id != 2:
+    # if current_user.role_id != 1 and current_user.role_id != 2:
+    if current_user.role_id != 2:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
-    if manager_exist:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Forbidden!!! Manager already exists.")
-
-    new_manager = models.Manager(
-        user_id=current_user.id, **manager.dict())
-    db.add(new_manager)
-    db.commit()
-    db.refresh(new_manager)
-    print(new_manager)
-    return new_manager
+    if manager_exists:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Conflict!!! Manager already exists.")
+    else:
+        new_manager = models.Manager(
+            user_id=current_user.id, **manager.dict())
+        db.add(new_manager)
+        db.commit()
+        db.refresh(new_manager)
+        print(new_manager.user.email)
+        return new_manager
 
 
 @router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
@@ -80,7 +81,7 @@ def delete_manager(id: int, db: Session = Depends(get_db), current_user: dict = 
 
 
 @router.put('/{id}')
-def update_manager(id: int, updated_user: schemas.UserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def update_manager(id: int, updated_user: schemas.GenUserRes, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     manager = db.query(models.User).filter(
         models.User.role_id == 2, models.User.id == id).first()
     if not manager:
@@ -92,3 +93,31 @@ def update_manager(id: int, updated_user: schemas.UserCreate, db: Session = Depe
     manager.update(updated_user.dict(), synchronize_session=False)
     db.commit()
     return manager
+
+
+# -----------------------------------------------Profiles----------------------------------------------
+
+
+@router.get('-profiles', response_model=List[schemas.ManagerRes])
+def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20, offset: int = 0):
+    managers = db.query(models.Manager).limit(limit).offset(offset).all()
+    if current_user.role_id != 1:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Insufficient authentication credentials!")
+    return managers
+
+
+@router.get('-profiles/{id}', response_model=List[schemas.ManagerRes])
+def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+    manager = db.query(models.Manager).filter(models.Manager.id == id).first()
+    if not manager:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"No Manager with id: {id} was found!")
+
+    if current_user.id == manager.user_id:
+        return manager
+
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Forbidden!!! Insufficient authentication credentials!")
+    # return Manager

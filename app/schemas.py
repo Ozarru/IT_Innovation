@@ -1,51 +1,18 @@
 from datetime import datetime
 from typing import Optional
-from xmlrpc.client import boolean
 from pydantic import BaseModel, EmailStr
+
+# --------------------------------------------------Role schemas------------------------------------------
 
 
 class Role(BaseModel):
-    name = str
-    sec_level = int
-
-
-class RoleRes(Role):
-    pass
-
-
-# ---------------User--------------------------------
-class UserBase(BaseModel):
-    firstname: str
-    lastname: str
-    email: EmailStr
-    password: str
-    birth_date: Optional[str]
-    phone: Optional[str]
-    address: Optional[str]
-    birth_date: Optional[str]
-    is_active: Optional[boolean]
-    registered_at: Optional[datetime]
-    role_id: Optional[int]
-    school_id: Optional[int]
-
-
-class UserCreate(UserBase):
-    pass
-
-
-class UserRes(BaseModel):
-    id: int
-    firstname: str
-    lastname: str
-    email: EmailStr
-    phone: str
-    role_id: int
-    school_id: int
-    # role: RoleRes
-    # school: "SchoolRes"
+    name: str
+    sec_level: int
 
     class Config:
         orm_mode = True
+
+# -------------------------------------------Authentication schemas--------------------------------------
 
 
 class UserLogin(BaseModel):
@@ -62,7 +29,10 @@ class TokenData(BaseModel):
     id: Optional[str]
 
 
-# -------------User creation schemas--------------------------------
+# ------------------------------------------------Request schemas----------------------------------------
+
+
+# User creation schemas
 class GenUserCreate(BaseModel):
     firstname: str
     lastname: str
@@ -74,90 +44,8 @@ class GenUserCreate(BaseModel):
         orm_mode = True
 
 
-class SuperUserCreate(GenUserCreate):
-    pass
-    role_id: int = 1
-
-
-class TopUserCreate(GenUserCreate):
-    pass
-    role_id: int = 2
-
-
-class StaffCreate(GenUserCreate):
-    pass
-    role_id: int = 3
-
-
-class StudentCreate(GenUserCreate):
-    pass
-    role_id: int = 4
-
-
-class ParentCreate(GenUserCreate):
-    pass
-    role_id: int = 5
-
-# -------------User response schemas--------------------------------
-
-
-class GenUserRes(BaseModel):
-    id: int
-    firstname: str
-    lastname: str
-    role_id: int
-
-    class Config:
-        orm_mode = True
-
-
-class SuperUserRes(GenUserRes):
-    pass
-
-
-class TopUserRes(GenUserRes):
-    pass
-
-
-class StaffRes(GenUserRes):
-    pass
-    school_id: int
-    # school: "SchoolRes"
-
-
-class StudentRes(GenUserRes):
-    pass
-    school_id: int
-    # school: "SchoolRes"
-
-
-class ParentRes(GenUserRes):
-    pass
-    school_id: int
-    # school: "SchoolRes"
-
-
-# -------------Manager schemas--------------------------------
-
-
-class Manager(BaseModel):
-    user_id: int
-    user: UserRes
-    school: "SchoolRes"
-
-
-class ManagerCreate(BaseModel):
-    is_manager: boolean
-
-
-class ManagerRes(BaseModel):
-    user_id: int
-    user: TopUserRes
-
-# -------------School schemas--------------------------------
-
-
-class SchoolBase (BaseModel):
+# School creation schemas
+class SchoolCreate (BaseModel):
     name: str
     address: str
     email: Optional[str]
@@ -168,12 +56,48 @@ class SchoolBase (BaseModel):
     bank_name: Optional[str]
     bank_acc_name: Optional[str]
     bank_acc_num: Optional[int]
-    is_active: Optional[boolean]
+    is_active: Optional[bool]
     registered_at: Optional[datetime]
 
+    class Config:
+        orm_mode = True
 
-class SchoolCreate(SchoolBase):
-    pass
+
+# Activation schemas
+class ManagerActivate(BaseModel):
+    is_manager: bool = True
+
+    class Config:
+        orm_mode = True
+
+
+class ParentActivate(BaseModel):
+    is_parent: bool = True
+    email: EmailStr
+
+    class Config:
+        orm_mode = True
+
+
+class StudentActivate(BaseModel):
+    matric_id: int
+    is_student: bool = True
+    email: EmailStr
+
+    class Config:
+        orm_mode = True
+
+
+class StaffActivate(BaseModel):
+    matric_id: int
+    is_staff: bool = True
+    email: EmailStr
+
+    class Config:
+        orm_mode = True
+
+
+# ------------------------------------------------Response schemas---------------------------------------
 
 
 class SchoolRes(BaseModel):
@@ -181,13 +105,71 @@ class SchoolRes(BaseModel):
     name: str
     description: str
     manager_id: int
-    # manager:  ManagerRes
+    # manager:  "GenUserRes"
 
     class Config:
         orm_mode = True
 
 
+class GenUserRes(BaseModel):
+    id: int
+    firstname: Optional[str]
+    lastname: Optional[str]
+    email: EmailStr
+    role_id: Optional[int]
+    role: Optional[Role]
+    school_id: Optional[int]
+    school: Optional[SchoolRes]
+
+    class Config:
+        orm_mode = True
+
+
+class ManagerRes(BaseModel):
+    id: int
+    user_id: int
+    user: GenUserRes
+
+    class Config:
+        orm_mode = True
+
+
+class StudentRes(BaseModel):
+    id: int
+    is_student: bool
+    matric_id: int
+    email: EmailStr
+    parents: list[GenUserRes]
+    user: GenUserRes
+
+    class Config:
+        orm_mode = True
+
+
+class ParentRes(BaseModel):
+    id: int
+    is_parent: bool
+    email: EmailStr
+    students: list[GenUserRes]
+    user: GenUserRes
+
+    class Config:
+        orm_mode = True
+
+
+class StaffRes(BaseModel):
+    id: int
+    is_staff: bool
+    email: EmailStr
+    # classes: ClassRes
+    user: GenUserRes
+
+    class Config:
+        orm_mode = True
+
 # -------------EduStage--------------------------------
+
+
 class EduStageBase (BaseModel):
     name: str
     description: Optional[str]
