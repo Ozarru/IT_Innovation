@@ -2,12 +2,12 @@ from typing import List
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from ..config.database import get_db
-from .. import models, schemas, utils, oauth2
+from .. import gen_schemas, models, utils, oauth2
 
 router = APIRouter(prefix='/students', tags=['Students'])
 
 
-@router.get('/', response_model=List[schemas.GenUserRes])
+@router.get('/', response_model=List[gen_schemas.GenUserRes])
 def get_students(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20, offset: int = 0):
     if current_user.role_id == 1:
         students = db.query(models.User).filter(models.User.role_id == 4).all()
@@ -21,8 +21,8 @@ def get_students(db: Session = Depends(get_db), current_user: dict = Depends(oau
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail=f"No school was found with you as the manager, hence no student too!")
         students = db.query(models.User).filter(
-            models.User.role_id == 4, models.User.school == school).all()
-        # models.User.role_id == 4,, models.User.school_id == current_school).limit(limit).offset(offset).all()
+            models.User.role_id == 4, models.User.school_id == school.id).all()
+        # models.User.role_id == 4, models.User.school_id == current_school).limit(limit).offset(offset).all()
         if not students:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail=f"No Student was found!")
@@ -32,7 +32,7 @@ def get_students(db: Session = Depends(get_db), current_user: dict = Depends(oau
                             detail=f"Forbidden!!! Insufficient authentication credentials!")
 
 
-@router.get('/{id}', response_model=schemas.GenUserRes)
+@router.get('/{id}', response_model=gen_schemas.GenUserRes)
 def get_student(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(
         models.School.manager_id == current_user.id).first()
@@ -50,13 +50,13 @@ def get_student(id: int, db: Session = Depends(get_db), current_user: dict = Dep
     return student
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.GenUserRes)
-def create_students(user: schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    school = db.query(models.School).filter(
-        models.School.manager_id == current_user.id).first()
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.GenUserRes)
+def create_students(user: gen_schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     if current_user.role_id != 2:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials!")
+    school = db.query(models.School).filter(
+        models.School.manager_id == current_user.id).first()
     if not school:
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
                             detail=f"Not allowed!!! You must create a school before adding students!")
@@ -71,8 +71,8 @@ def create_students(user: schemas.GenUserCreate, db: Session = Depends(get_db), 
     return new_user
 
 
-@router.post('/activate', status_code=status.HTTP_201_CREATED, response_model=schemas.StudentRes)
-def activate_student(student: schemas.StudentActivate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+@router.post('/activate', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.StudentRes)
+def activate_student(student: gen_schemas.StudentActivate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
 
     school = db.query(models.School).filter(
         models.School.manager_id == current_user.id).first()
@@ -113,7 +113,7 @@ def delete_student(id: int, db: Session = Depends(get_db), current_user: dict = 
 
 
 @router.put('/{id}')
-def update_student(id: int, updated_student: schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def update_student(id: int, updated_student: gen_schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(
         models.School.manager_id == current_user.id).first()
     student = db.query(models.User).filter(

@@ -1,8 +1,47 @@
 from .config.database import Base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
+
+
+# --------------------------------association tables---------------------------
+
+
+class_attendance_association = Table(
+    "association_class_attendance",
+    Base.metadata,
+    Column("attendance_id", ForeignKey('class_attendances.id'), unique=True),
+    Column("student_matric", ForeignKey('students.matric_id'), unique=True),
+)
+
+exam_attendance_association = Table(
+    "association_exam_attendance",
+    Base.metadata,
+    Column("attendance_id", ForeignKey('exam_attendances.id'), unique=True),
+    Column("student_matric", ForeignKey('students.matric_id'), unique=True),
+)
+
+payment_association = Table(
+    "association_payment",
+    Base.metadata,
+    Column("payment_id", ForeignKey('payments.id'), unique=True),
+    Column("student_matric", ForeignKey('students.matric_id'), unique=True),
+)
+
+exam_stats_association = Table(
+    "association_exam_stats",
+    Base.metadata,
+    Column("exam_id", ForeignKey('exams.id'), unique=True),
+    Column("student_matric", ForeignKey('students.matric_id'), unique=True),
+)
+
+parent_association = Table(
+    "association_parent",
+    Base.metadata,
+    Column("parent_email", ForeignKey('parents.email'), unique=True),
+    Column("student_email", ForeignKey('students.email'), unique=True),
+)
 
 
 class User(Base):
@@ -65,41 +104,6 @@ class Staff(Base):
     user = relationship('User', backref=backref("staff", uselist=False))
 
 
-fam_assoc_table = Table(
-    "family_association",
-    Base.metadata,
-    Column("parent_email", ForeignKey('parents.email'), unique=True),
-    Column("student_email", ForeignKey('students.email'), unique=True),
-)
-
-
-class Parent(Base):
-    __tablename__ = 'parents'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    is_parent = Column(Boolean, server_default='true', nullable=False)
-    email = Column(String, ForeignKey(
-        'users.email', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
-    user = relationship('User', backref=backref("parent", uselist=False))
-    students = relationship(
-        "Student", secondary=fam_assoc_table, back_populates="parents"
-    )
-
-
-class Student(Base):
-    __tablename__ = 'students'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    matric_id = Column(Integer, unique=True, nullable=False)
-    is_student = Column(Boolean, server_default='true', nullable=False)
-    email = Column(String, ForeignKey(
-        'users.email', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
-    user = relationship('User', backref=backref("student", uselist=False))
-    parents = relationship(
-        "Parent", secondary=fam_assoc_table, back_populates="students"
-    )
-
-
 class School(Base):
     __tablename__ = 'schools'
 
@@ -120,6 +124,18 @@ class School(Base):
     manager_id = Column(Integer, ForeignKey("managers.user_id"),
                         primary_key=True, unique=True, nullable=False)
     manager = relationship('Manager', backref=backref("school", uselist=False))
+
+
+class AcademicYear(Base):
+    __tablename__ = 'academic_years'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    start_date = Column(String, nullable=False)
+    end_date = Column(String, nullable=False)
+    school_id = Column(Integer, ForeignKey(
+        'schools.id', ondelete="CASCADE"), nullable=False)
+    school = relationship('School', backref="academic_years")
 
 
 class EduStage(Base):
@@ -155,29 +171,268 @@ class Grade(Base):
     edu_phase_id = Column(Integer, ForeignKey(
         'edu_phases.id', ondelete="CASCADE"), nullable=False)
     edu_phase = relationship('EduPhase', backref="grades")
+    supervisor_mail = Column(String, ForeignKey(
+        'staff.email', ondelete="CASCADE"), nullable=False)
+    supervisor = relationship(
+        'Staff', backref=backref("grades", uselist=False))
 
 
-# class Course(Base):
-#     __tablename__ = 'courses'
+class Term(Base):
+    __tablename__ = 'terms'
 
-#     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-#     name = Column(String, nullable=False)
-#     description = Column(String, nullable=False)
-#     credit = Column(Integer, nullable=False, default=1)
-#     class_id = Column(Integer, ForeignKey(
-#         'classrooms.id', ondelete="CASCADE"), nullable=False)
-#     school_id = Column(Integer, ForeignKey(
-#         'schools.id', ondelete="CASCADE"), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    start_date = Column(String, nullable=False)
+    end_date = Column(String, nullable=False)
+    edu_phase_id = Column(Integer, ForeignKey(
+        'edu_phases.id', ondelete="CASCADE"), nullable=False)
+    edu_phase = relationship('EduPhase', backref="terms")
 
 
-# class Subject(Base):
-#     __tablename__ = 'subjects'
+class Timetable(Base):
+    __tablename__ = 'timetables'
 
-#     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-#     name = Column(String, nullable=False)
-#     description = Column(String, nullable=False)
-#     coefficient = Column(Integer, nullable=False, default=1)
-#     class_id = Column(Integer, ForeignKey(
-#         'classrooms.id', ondelete="CASCADE"), nullable=False)
-#     school_id = Column(Integer, ForeignKey(
-#         'schools.id', ondelete="CASCADE"), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    genre = Column(String, nullable=False)
+    grade_id = Column(Integer, ForeignKey(
+        'grades.id', ondelete="CASCADE"), nullable=False)
+    grade = relationship('Staff', backref="grades")
+    term_id = Column(Integer, ForeignKey(
+        'terms.id', ondelete="CASCADE"), nullable=False)
+    term = relationship('Term', backref="subjects")
+    academic_year_id = Column(Integer, ForeignKey(
+        'academic_years.id', ondelete="CASCADE"), nullable=False)
+    academic_year = relationship('AcademicYear', backref="subjects")
+
+# ------------------------------------Classes-----------------------------
+
+
+class AcademicDay(Base):
+    __tablename__ = 'academic_days'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    start_time = Column(String, nullable=False)
+    end_time = Column(String, nullable=False)
+    timetable_id = Column(Integer, ForeignKey(
+        'timetables.id', ondelete="CASCADE"), nullable=False)
+    timetable = relationship('Timetable', backref="academic_days")
+
+
+class Subject(Base):
+    __tablename__ = 'subjects'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    syllabus = Column(String, nullable=True)
+    coefficient = Column(Integer, nullable=False, default=1)
+    grade_id = Column(Integer, ForeignKey(
+        'grades.id', ondelete="CASCADE"), nullable=False)
+    grade = relationship('Grade', backref="subjects")
+    teacher_mail = Column(String, ForeignKey(
+        'staff.email', ondelete="CASCADE"), nullable=False)
+    teacher = relationship('Staff', backref="subjects")
+    term_id = Column(Integer, ForeignKey(
+        'terms.id', ondelete="CASCADE"), nullable=False)
+    term = relationship('Term', backref="subjects")
+    academic_year_id = Column(Integer, ForeignKey(
+        'academic_years.id', ondelete="CASCADE"), nullable=False)
+    academic_year = relationship('AcademicYear', backref="subjects")
+
+
+class Period(Base):
+    __tablename__ = 'periods'
+
+    id = Column(Integer, primary_key=True, autoincrement=True,
+                unique=True,  nullable=False)
+    name = Column(String, nullable=False)
+    duration = Column(Float, nullable=False)
+    start_time = Column(String, nullable=False)
+    end_time = Column(String, nullable=False)
+    academic_day_id = Column(Integer, ForeignKey(
+        'timetables.id', ondelete="CASCADE"), nullable=False)
+    academic_day = relationship('AcademicDay', backref="periods")
+    subject_id = Column(Integer, ForeignKey(
+        'subjects.id', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    subject = relationship(
+        'Subject', backref=backref("periods", uselist=False))
+
+
+class ClassAttendance(Base):
+    __tablename__ = 'class_attendances'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    is_present = Column(Boolean, server_default='false', nullable=False)
+    remark = Column(String, nullable=True)
+    period_id = Column(Integer, ForeignKey(
+        'periods.id', ondelete="CASCADE"), nullable=False)
+    period = relationship(
+        'Period', backref=backref("class_attendances", uselist=False))
+    students = relationship(
+        "Student", secondary=class_attendance_association, back_populates="class_attendances"
+    )
+    date = Column(TIMESTAMP(timezone=True),
+                  server_default=text('now()'))
+
+
+# ------------------------------------Exams-----------------------------
+class ExamDay(Base):
+    __tablename__ = 'exam_days'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    start_time = Column(String, nullable=False)
+    end_time = Column(String, nullable=False)
+    timetable_id = Column(Integer, ForeignKey(
+        'timetables.id', ondelete="CASCADE"), nullable=False)
+    timetable = relationship('Timetable', backref="exam_days")
+
+
+class Exam(Base):
+    __tablename__ = 'exams'
+
+    id = Column(Integer, primary_key=True, autoincrement=True,
+                unique=True,  nullable=False)
+    genre = Column(String, nullable=True)
+    name = Column(String, nullable=True)
+    duration = Column(Float, nullable=False)
+    start_time = Column(String, nullable=False)
+    end_time = Column(String, nullable=False)
+    exam_day_id = Column(Integer, ForeignKey(
+        'exam_days.id', ondelete="CASCADE"), nullable=False)
+    exam_day = relationship('ExamDay', backref="exams")
+    subject_id = Column(Integer, ForeignKey(
+        'subjects.id', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    subject = relationship('Subject', backref=backref(
+        "exams", uselist=False))
+
+
+class ExamAttendance(Base):
+    __tablename__ = 'exam_attendances'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    remark = Column(String, nullable=True)
+    exam_id = Column(Integer, ForeignKey("exams.id"), nullable=False)
+    exam = relationship('Exam', backref=backref(
+        "exam_attendance", uselist=False))
+    students = relationship(
+        "Student", secondary=exam_attendance_association, back_populates="exam_attendances"
+    )
+    date = Column(TIMESTAMP(timezone=True),
+                  server_default=text('now()'))
+
+
+class ExamGrade(Base):
+    __tablename__ = 'exam_grades'
+
+    id = Column(Integer, primary_key=True, autoincrement=True,
+                unique=True, nullable=False)
+    score = Column(Float, nullable=True, server_default='0')
+    remark = Column(String, nullable=True)
+    student_matric = Column(Integer, ForeignKey(
+        'students.matric_id', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    student = relationship('Student', backref=backref(
+        "exam_grades", uselist=False))
+    exam_id = Column(Integer, ForeignKey(
+        'exams.id', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    exam = relationship('Exam', backref=backref(
+        "exam_grades", uselist=False))
+
+
+class ExamStats(Base):
+    __tablename__ = 'exam_stats'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    candidates = Column(Integer, nullable=True, server_default='0')
+    highest_score = Column(Float, nullable=True, server_default='0')
+    lowest_score = Column(Float, nullable=True, server_default='0')
+    average_score = Column(Float, nullable=True, server_default='0')
+    success_rate = Column(Float, nullable=True, server_default='0')
+    failure_rate = Column(Float, nullable=True, server_default='0')
+    observations = Column(String, nullable=True,
+                          server_default='Nothing to report')
+    exam_id = Column(Integer, ForeignKey(
+        'exams.id', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    exam = relationship('Exam', backref=backref(
+        "exam_stats", uselist=False))
+    students = relationship(
+        "Student", secondary=exam_stats_association, back_populates="exam_stats"
+    )
+
+
+# ------------------------------------Payment-----------------------------
+
+class Fee(Base):
+    __tablename__ = 'fees'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    # academic_year_id = Column(Integer, ForeignKey(
+    #     'academic_years.id', ondelete="CASCADE"), nullable=False)
+    # academic_year = relationship('AcademicYear', backref="fees")
+    # term_id = Column(Integer, ForeignKey(
+    #     'terms.id', ondelete="CASCADE"), nullable=False)
+    # term = relationship('Term', backref="fees")
+    grade_id = Column(Integer, ForeignKey(
+        'grades.id', ondelete="CASCADE"), nullable=False)
+    grade = relationship('Grades', backref="fees")
+    name = Column(Integer, nullable=False)
+    amount = Column(Integer, nullable=False)
+
+
+class Payment(Base):
+    __tablename__ = 'payments'
+
+    id = Column(Integer, primary_key=True, unique=True,
+                autoincrement=True, nullable=False)
+    fee_id = Column(Integer, ForeignKey(
+        'fees.id', ondelete="CASCADE"), nullable=False)
+    fee = relationship('Fee', backref="payments")
+    student_matric = Column(Integer, ForeignKey(
+        'students.matric_id', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    student = relationship('Student', backref=backref(
+        "payments", uselist=False))
+    # students = relationship(
+    #     "Student", secondary=payment_association, back_populates="payments"
+    # )
+    amount_payed = Column(Integer, nullable=False)
+    amount_due = Column(Integer, nullable=True, server_default='0')
+
+
+class Parent(Base):
+    __tablename__ = 'parents'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    is_parent = Column(Boolean, server_default='true', nullable=False)
+    email = Column(String, ForeignKey(
+        'users.email', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    user = relationship('User', backref=backref("parent", uselist=False))
+    students = relationship(
+        "Student", secondary=parent_association, back_populates="parents"
+    )
+
+
+class Student(Base):
+    __tablename__ = 'students'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    matric_id = Column(Integer, unique=True, nullable=False)
+    is_student = Column(Boolean, server_default='true', nullable=False)
+    email = Column(String, ForeignKey(
+        'users.email', ondelete="CASCADE"), primary_key=True, unique=True, nullable=False)
+    user = relationship('User', backref=backref("student", uselist=False))
+    parents = relationship(
+        "Parent", secondary=parent_association, back_populates="students"
+    )
+    payments = relationship(
+        "Payment", secondary=payment_association, back_populates="students"
+    )
+    exam_attendances = relationship(
+        "ExamAttendance", secondary=exam_attendance_association, back_populates="students"
+    )
+    classe_attendances = relationship(
+        "ClassAttendance", secondary=class_attendance_association, back_populates="students"
+    )
+    grade_id = Column(Integer, ForeignKey(
+        'grades.id', ondelete="CASCADE"), nullable=True)
+    grade = relationship('Grade', backref=backref("student", uselist=False))

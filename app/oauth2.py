@@ -3,7 +3,7 @@ from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from requests import Session
-from . import schemas, models
+from . import gen_schemas, models
 from .config import database, config
 
 SECRET_KEY = config.settings.secret_key
@@ -31,7 +31,7 @@ def verify_access_token(token: str, credentials_exception):
 
         if id is None:
             raise credentials_exception
-        token_data = schemas.TokenData(id=id)
+        token_data = gen_schemas.TokenData(id=id)
 
     except JWTError:
         raise credentials_exception

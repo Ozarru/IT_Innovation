@@ -1,14 +1,14 @@
 
 from typing import List
-from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
+from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from ..config.database import get_db
-from .. import models, schemas, oauth2
+from .. import gen_schemas, models, oauth2
 
 router = APIRouter(prefix='/schools', tags=['Schools'])
 
 
-@router.get('/', status_code=status.HTTP_200_OK, response_model=List[schemas.SchoolRes])
+@router.get('/', status_code=status.HTTP_200_OK, response_model=List[gen_schemas.SchoolRes])
 def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 50, offset: int = 0):
     if current_user.role_id == 1:
         schools = db.query(models.School).limit(limit).offset(offset).all()
@@ -25,7 +25,7 @@ def get_schools(db: Session = Depends(get_db), current_user: dict = Depends(oaut
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
 
 
-@router.get('/{id}', status_code=status.HTTP_200_OK, response_model=schemas.SchoolRes)
+@router.get('/{id}', status_code=status.HTTP_200_OK, response_model=gen_schemas.SchoolRes)
 def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(models.School.id == id).first()
     if not school:
@@ -37,13 +37,13 @@ def get_school(id: int, db: Session = Depends(get_db), current_user: dict = Depe
     return school
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.SchoolRes)
-def create_schools(school: schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    school_exist = db.query(models.School).filter(
-        models.School.manager_id == current_user.id).first()
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.SchoolRes)
+def create_schools(school: gen_schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     if current_user.role_id != 2:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
+    school_exist = db.query(models.School).filter(
+        models.School.manager_id == current_user.id).first()
     if school_exist:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=f"Conflict!!! Admin already has a school, therefore cannot create another school.")
@@ -72,7 +72,7 @@ def delete_school(id: int, db: Session = Depends(get_db), current_user: dict = D
 
 
 @router.put('/{id}')
-def update_school(id: int, updated_school: schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def update_school(id: int, updated_school: gen_schemas.SchoolCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(models.School.id == id).first()
     if not school:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr
+from .func_schemas import AcadTermRes, AcadYearRes
 
 # --------------------------------------------------Role schemas------------------------------------------
 
@@ -39,6 +40,7 @@ class GenUserCreate(BaseModel):
     email: EmailStr
     password: str
     phone: Optional[str]
+    # school_id: Optional[int]
 
     class Config:
         orm_mode = True
@@ -79,8 +81,17 @@ class ParentActivate(BaseModel):
         orm_mode = True
 
 
+class PrtAssocStd(BaseModel):
+    parent_mail: EmailStr
+    student_mail: EmailStr
+
+    class Config:
+        orm_mode = True
+
+
 class StudentActivate(BaseModel):
     matric_id: int
+    grade_id: int
     is_student: bool = True
     email: EmailStr
 
@@ -141,6 +152,7 @@ class StudentRes(BaseModel):
     email: EmailStr
     parents: list[GenUserRes]
     user: GenUserRes
+    grade: "GradeRes"
 
     class Config:
         orm_mode = True
@@ -161,7 +173,6 @@ class StaffRes(BaseModel):
     id: int
     is_staff: bool
     email: EmailStr
-    # classes: ClassRes
     user: GenUserRes
 
     class Config:
@@ -170,19 +181,36 @@ class StaffRes(BaseModel):
 # -------------EduStage--------------------------------
 
 
-class EduStageBase (BaseModel):
+class EduStageCreate (BaseModel):
     name: str
+    school_id: int
     description: Optional[str]
 
 
-class EduStageCreate(EduStageBase):
-    pass
-
-
-class EduStageRes(EduStageBase):
+class EduStageRes(BaseModel):
     id: int
-    school_id: int
+    name: str
     school: SchoolRes
+
+    class Config:
+        orm_mode = True
+
+# -------------EduPhase--------------------------------
+
+
+class EduPhaseCreate (BaseModel):
+    name: str
+    edu_calendar: str
+    edu_stage_id: int
+    description: Optional[str]
+
+
+class EduPhaseRes(BaseModel):
+    id: int
+    name: str
+    edu_calendar: str
+    edu_stage: EduStageRes
+    description: str
 
     class Config:
         orm_mode = True
@@ -190,37 +218,50 @@ class EduStageRes(EduStageBase):
 # -------------Classroom--------------------------------
 
 
-class ClassroomBase (BaseModel):
+class GradeCreate (BaseModel):
     name: str
+    alias: Optional[str]
     description: Optional[str]
     class_size: Optional[int]
+    supervisor_mail: EmailStr
+    edu_phase_id: int
 
 
-class ClassroomCreate(ClassroomBase):
-    pass
-
-
-class ClassroomRes(ClassroomBase):
-    pass
-    school_id: int
+class GradeRes(BaseModel):
+    id: int
+    name: str
+    alias: str
+    class_size: int
+    description: str
+    supervisor: StaffRes
+    edu_phase: EduPhaseRes
 
     class Config:
         orm_mode = True
 
 
 # ----------------Course--------------------------------
-class CourseBase (BaseModel):
+class SubjectCreate (BaseModel):
     name: str
     description: Optional[str]
-    credit: Optional[int]
+    syllabus: Optional[str]
+    coefficient: Optional[int]
+    grade_id: int
+    teacher_mail: EmailStr
+    term_id: int
+    academic_year_id: int
 
 
-class CourseCreate(CourseBase):
-    pass
-
-
-class CourseRes(CourseBase):
-    pass
+class SubjectRes(BaseModel):
+    id: int
+    name: str
+    description: str
+    syllabus: str
+    coefficient: int
+    grade: GradeRes
+    teacher: StaffRes
+    term: "AcadTermRes"
+    academic_year: "AcadYearRes"
 
     class Config:
         orm_mode = True

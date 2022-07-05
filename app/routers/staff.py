@@ -2,12 +2,12 @@ from typing import List
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from ..config.database import get_db
-from .. import models, schemas, utils, oauth2
+from .. import gen_schemas, models, utils, oauth2
 
 router = APIRouter(prefix='/staff', tags=['Staff'])
 
 
-@router.get('/', response_model=List[schemas.GenUserRes])
+@router.get('/', response_model=List[gen_schemas.GenUserRes])
 def get_all_staff(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20, offset: int = 0):
     if current_user.role_id == 1:
         staff = db.query(models.User).filter(models.User.role_id == 4).all()
@@ -31,7 +31,7 @@ def get_all_staff(db: Session = Depends(get_db), current_user: dict = Depends(oa
                             detail=f"Forbidden!!! Insufficient authentication credentials!")
 
 
-@router.get('/{id}', response_model=schemas.GenUserRes)
+@router.get('/{id}', response_model=gen_schemas.GenUserRes)
 def get_one_staff(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(
         models.School.manager_id == current_user.id).first()
@@ -49,8 +49,8 @@ def get_one_staff(id: int, db: Session = Depends(get_db), current_user: dict = D
     return staff
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.GenUserRes)
-def create_staff(user: schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.GenUserRes)
+def create_staff(user: gen_schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(
         models.School.manager_id == current_user.id).first()
     if current_user.role_id != 2:
@@ -70,8 +70,8 @@ def create_staff(user: schemas.GenUserCreate, db: Session = Depends(get_db), cur
     return new_user
 
 
-@router.post('/activate', status_code=status.HTTP_201_CREATED, response_model=schemas.StaffRes)
-def activate_staff(staff: schemas.StaffActivate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+@router.post('/activate', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.StaffRes)
+def activate_staff(staff: gen_schemas.StaffActivate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(
         models.School.manager_id == current_user.id).first()
     if current_user.role_id != 1 and current_user.role_id != 2:
@@ -111,7 +111,7 @@ def delete_staff(id: int, db: Session = Depends(get_db), current_user: dict = De
 
 
 @router.put('/{id}')
-def update_staff(id: int, updated_staff: schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def update_staff(id: int, updated_staff: gen_schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     school = db.query(models.School).filter(
         models.School.manager_id == current_user.id).first()
     staff = db.query(models.User).filter(

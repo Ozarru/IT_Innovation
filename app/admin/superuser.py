@@ -2,12 +2,12 @@ from typing import List, Optional
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from ..config.database import get_db
-from app import models, schemas, utils, oauth2
+from app import gen_schemas, models, utils, oauth2
 
 router = APIRouter(prefix='/superusers', tags=['Superusers'])
 
 
-@router.get('/', response_model=List[schemas.GenUserRes])
+@router.get('/', response_model=List[gen_schemas.GenUserRes])
 def get_superusers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 0, offset: int = 0, search: Optional[str] = ""):
     if current_user.role_id != 1:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
@@ -18,7 +18,7 @@ def get_superusers(db: Session = Depends(get_db), current_user: dict = Depends(o
     return superusers
 
 
-@router.get('/{id}', response_model=schemas.GenUserRes)
+@router.get('/{id}', response_model=gen_schemas.GenUserRes)
 def get_superuser(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     superuser = db.query(models.User).filter(
         models.User.role_id == 1, models.User.id == id).first()
@@ -31,9 +31,9 @@ def get_superuser(id: int, db: Session = Depends(get_db), current_user: dict = D
     return superuser
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.GenUserRes)
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.GenUserRes)
 # def create_superusers(user: schemas.GenUserCreate, db: Session = Depends(get_db)):
-def create_superusers(user: schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def create_superusers(user: gen_schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     if current_user.role_id != 1:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials")
@@ -64,7 +64,7 @@ def delete_superuser(id: int, db: Session = Depends(get_db), current_user: dict 
 
 
 @router.put('/{id}')
-def update_superuser(id: int, updated_user: schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def update_superuser(id: int, updated_user: gen_schemas.GenUserCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     superuser = db.query(models.User).filter(
         models.User.role_id == 1, models.User.id == id).first()
     if not superuser:

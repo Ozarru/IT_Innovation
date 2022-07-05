@@ -2,23 +2,25 @@ from typing import List, Optional
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from ..config.database import get_db
-from app import models, schemas, utils, oauth2
+from app import gen_schemas, models, utils, oauth2
 
 router = APIRouter(prefix='/managers', tags=['Managers'])
 
 
-@router.get('/', response_model=List[schemas.GenUserRes])
-def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 0, offset: int = 0, search: Optional[str] = ""):
-    if current_user.role_id != 1:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Forbidden!!! Insufficient authentication credentials")
+@router.get('/', response_model=List[gen_schemas.GenUserRes])
+def get_managers(db: Session = Depends(get_db), limit: int = 0, offset: int = 0, search: Optional[str] = ""):
+    # def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 0, offset: int = 0, search: Optional[str] = ""):
+    # if current_user.role_id != 1:
+    #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+    #                         detail=f"Forbidden!!! Insufficient authentication credentials")
+    # managers = db.query(models.User).filter(models.User.role_id == 2).all()
     managers = db.query(models.User).filter(models.User.role_id == 2).all()
     # managers = db.query(models.User).filter(
     #     models.User.name.contains(search)).limit(limit).offset(offset).all()
     return managers
 
 
-@router.get('/{id}', response_model=schemas.GenUserRes)
+@router.get('/{id}', response_model=gen_schemas.GenUserRes)
 def get_manager(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     manager = db.query(models.User).filter(
         models.User.role_id == 2, models.User.id == id).first()
@@ -31,8 +33,8 @@ def get_manager(id: int, db: Session = Depends(get_db), current_user: dict = Dep
     return manager
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.GenUserRes)
-def create_managers(user: schemas.GenUserCreate, db: Session = Depends(get_db)):
+@router.post('/', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.GenUserRes)
+def create_managers(user: gen_schemas.GenUserCreate, db: Session = Depends(get_db)):
 
     hashed_pass = utils.hash(user.password)
     user.password = hashed_pass
@@ -44,8 +46,8 @@ def create_managers(user: schemas.GenUserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
-@router.post('/activate', status_code=status.HTTP_201_CREATED, response_model=schemas.ManagerRes)
-def activate_manager(manager: schemas.ManagerActivate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+@router.post('/activate', status_code=status.HTTP_201_CREATED, response_model=gen_schemas.ManagerRes)
+def activate_manager(manager: gen_schemas.ManagerActivate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     manager_exists = db.query(models.Manager).filter(
         models.Manager.user_id == current_user.id).first()
     # if current_user.role_id != 1 and current_user.role_id != 2:
@@ -81,7 +83,7 @@ def delete_manager(id: int, db: Session = Depends(get_db), current_user: dict = 
 
 
 @router.put('/{id}')
-def update_manager(id: int, updated_user: schemas.GenUserRes, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
+def update_manager(id: int, updated_user: gen_schemas.GenUserRes, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     manager = db.query(models.User).filter(
         models.User.role_id == 2, models.User.id == id).first()
     if not manager:
@@ -98,7 +100,7 @@ def update_manager(id: int, updated_user: schemas.GenUserRes, db: Session = Depe
 # -----------------------------------------------Profiles----------------------------------------------
 
 
-@router.get('-profiles', response_model=List[schemas.ManagerRes])
+@router.get('-profiles', response_model=List[gen_schemas.ManagerRes])
 def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20, offset: int = 0):
     managers = db.query(models.Manager).limit(limit).offset(offset).all()
     if current_user.role_id != 1:
@@ -107,7 +109,7 @@ def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oau
     return managers
 
 
-@router.get('-profiles/{id}', response_model=List[schemas.ManagerRes])
+@router.get('-profiles/{id}', response_model=List[gen_schemas.ManagerRes])
 def get_managers(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
     manager = db.query(models.Manager).filter(models.Manager.id == id).first()
     if not manager:
