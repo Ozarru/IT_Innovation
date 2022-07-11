@@ -2,8 +2,10 @@
 from typing import List
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
+
+from ..models import gen_models
 from ..config.database import get_db
-from .. import gen_schemas, models, oauth2
+from .. import gen_schemas, oauth2
 
 router = APIRouter(prefix='/edu_stages', tags=['Education Stages'])
 
@@ -11,18 +13,18 @@ router = APIRouter(prefix='/edu_stages', tags=['Education Stages'])
 @router.get('/', response_model=List[gen_schemas.EduStageRes])
 def get_edu_stages(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20):
     if current_user.role_id == 1:
-        edu_stages = db.query(models.EduStage).all()
+        edu_stages = db.query(gen_models.EduStage).all()
         return edu_stages
     elif current_user.role_id == 2:
-        edu_stages = db.query(models.EduStage).filter(
-            models.EduStage.school.manager_id == current_user.id).all()
+        edu_stages = db.query(gen_models.EduStage).filter(
+            gen_models.EduStage.school.manager_id == current_user.id).all()
         if not edu_stages:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail=f"No Education stage was found")
         return edu_stages
     else:
-        edu_stages = db.query(models.EduStage).filter(
-            models.EduStage.school_id == current_user.school_id).all()
+        edu_stages = db.query(gen_models.EduStage).filter(
+            gen_models.EduStage.school_id == current_user.school_id).all()
         if not edu_stages:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail=f"No Education stage was found")
@@ -34,8 +36,8 @@ def get_edu_stages(db: Session = Depends(get_db), current_user: dict = Depends(o
 
 @router.get('/{id}', response_model=gen_schemas.EduStageRes)
 def get_edu_stage(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    edu_stage_query = db.query(models.EduStage).filter(
-        models.EduStage.id == id)
+    edu_stage_query = db.query(gen_models.EduStage).filter(
+        gen_models.EduStage.id == id)
     edu_stage = edu_stage_query.first()
     if not edu_stage:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -51,7 +53,7 @@ def create_edu_stages(edu_stage: gen_schemas.EduStageCreate, db: Session = Depen
     if not current_user.role_id == 2:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
-    new_edu_stage = models.EduStage(
+    new_edu_stage = gen_models.EduStage(
         school_id=current_user.school.id, **edu_stage.dict())
     db.add(new_edu_stage)
     db.commit()
@@ -61,8 +63,8 @@ def create_edu_stages(edu_stage: gen_schemas.EduStageCreate, db: Session = Depen
 
 @router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_edu_stage(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    edu_stage_query = db.query(models.EduStage).filter(
-        models.EduStage.id == id)
+    edu_stage_query = db.query(gen_models.EduStage).filter(
+        gen_models.EduStage.id == id)
     edu_stage = edu_stage_query.first()
     if not edu_stage:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -78,8 +80,8 @@ def delete_edu_stage(id: int, db: Session = Depends(get_db), current_user: dict 
 
 @router.put('/{id}')
 def update_edu_stage(id: int, updated_edu_stage: gen_schemas.EduStageCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    edu_stage_query = db.query(models.EduStage).filter(
-        models.EduStage.id == id)
+    edu_stage_query = db.query(gen_models.EduStage).filter(
+        gen_models.EduStage.id == id)
     edu_stage = edu_stage_query.first()
     if not edu_stage:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

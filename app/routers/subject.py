@@ -2,8 +2,10 @@
 from typing import List
 from fastapi import Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
+
+from ..models import gen_models
 from ..config.database import get_db
-from .. import gen_schemas, models, oauth2
+from .. import gen_schemas, oauth2
 
 router = APIRouter(prefix='/subjects', tags=['Subjects'])
 
@@ -11,11 +13,11 @@ router = APIRouter(prefix='/subjects', tags=['Subjects'])
 @router.get('/', response_model=List[gen_schemas.SubjectRes])
 def get_subjects(db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user), limit: int = 20):
     if current_user.role_id == 1:
-        subjects = db.query(models.Subject).all()
+        subjects = db.query(gen_models.Subject).all()
         return subjects
     elif current_user.role_id == 2:
-        subjects = db.query(models.Subject).filter(
-            models.Subject.edu_phase.edu_stage.school.manager_id == current_user.id).all()
+        subjects = db.query(gen_models.Subject).filter(
+            gen_models.Subject.edu_phase.edu_stage.school.manager_id == current_user.id).all()
         if not subjects:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail=f"No Education phase was found")
@@ -27,8 +29,8 @@ def get_subjects(db: Session = Depends(get_db), current_user: dict = Depends(oau
 
 @router.get('/{id}', response_model=gen_schemas.SubjectRes)
 def get_subject(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    subject = db.query(models.Subject).filter(
-        models.Subject.id == id).first()
+    subject = db.query(gen_models.Subject).filter(
+        gen_models.Subject.id == id).first()
     if not subject:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Education phase with id: {id} was not found")
@@ -44,7 +46,7 @@ def create_subjects(subject: gen_schemas.SubjectCreate, db: Session = Depends(ge
     if not current_user.role_id == 2:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail=f"Forbidden!!! Insufficient authentication credentials.")
-    new_subject = models.Subject(**subject.dict())
+    new_subject = gen_models.Subject(**subject.dict())
     db.add(new_subject)
     db.commit()
     db.refresh(new_subject)
@@ -53,8 +55,8 @@ def create_subjects(subject: gen_schemas.SubjectCreate, db: Session = Depends(ge
 
 @router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
 def delete_subject(id: int, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    subject_query = db.query(models.Subject).filter(
-        models.Subject.id == id)
+    subject_query = db.query(gen_models.Subject).filter(
+        gen_models.Subject.id == id)
     subject = subject_query.first()
     if not subject:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -70,8 +72,8 @@ def delete_subject(id: int, db: Session = Depends(get_db), current_user: dict = 
 
 @router.put('/{id}')
 def update_subject(id: int, updated_subject: gen_schemas.SubjectCreate, db: Session = Depends(get_db), current_user: dict = Depends(oauth2.get_current_user)):
-    subject_query = db.query(models.Subject).filter(
-        models.Subject.id == id)
+    subject_query = db.query(gen_models.Subject).filter(
+        gen_models.Subject.id == id)
     subject = subject_query.first()
     if not subject:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

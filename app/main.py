@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from .admin import superuser
-from .functions import attendance, exam, grades, payment, timetable
-from .routers import manager, school, edu_stage, edu_phase, grade, auth, staff, student, parent, subject
+from .admin import superuser, edu_stage, edu_phase, grade
+from .functions import attendance, classe, exam, payment, timetable
+from .routers import manager, school, auth, staff, student, parent, subject
 from .config import config
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -41,6 +41,11 @@ app.include_router(edu_phase.router)
 app.include_router(grade.router)
 app.include_router(subject.router)
 # ----------functions--------------
+app.include_router(classe.router)
+app.include_router(exam.router)
+app.include_router(payment.router)
+app.include_router(attendance.router)
+app.include_router(timetable.router)
 
 
 @app.get("/")

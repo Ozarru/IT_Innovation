@@ -1,17 +1,19 @@
 from os import access, remove
-from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
+from fastapi import status, HTTPException, Depends, APIRouter
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+
+from ..models import gen_models
 from ..config.database import get_db
-from .. import gen_schemas, models, utils, oauth2
+from .. import gen_schemas, utils, oauth2
 
 router = APIRouter(tags=['Authentication'])
 
 
 @router.post('/login', response_model=gen_schemas.Token)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(
-        models.User.email == user_credentials.username).first()
+    user = db.query(gen_models.User).filter(
+        gen_models.User.email == user_credentials.username).first()
 
     if not user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,

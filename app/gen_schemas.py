@@ -13,6 +13,7 @@ class Role(BaseModel):
     class Config:
         orm_mode = True
 
+
 # -------------------------------------------Authentication schemas--------------------------------------
 
 
@@ -152,7 +153,7 @@ class StudentRes(BaseModel):
     email: EmailStr
     parents: list[GenUserRes]
     user: GenUserRes
-    grade: "GradeRes"
+    # classe: "ClasseRes"
 
     class Config:
         orm_mode = True
@@ -183,14 +184,12 @@ class StaffRes(BaseModel):
 
 class EduStageCreate (BaseModel):
     name: str
-    school_id: int
     description: Optional[str]
 
 
 class EduStageRes(BaseModel):
     id: int
     name: str
-    school: SchoolRes
 
     class Config:
         orm_mode = True
@@ -200,7 +199,6 @@ class EduStageRes(BaseModel):
 
 class EduPhaseCreate (BaseModel):
     name: str
-    edu_calendar: str
     edu_stage_id: int
     description: Optional[str]
 
@@ -208,9 +206,8 @@ class EduPhaseCreate (BaseModel):
 class EduPhaseRes(BaseModel):
     id: int
     name: str
-    edu_calendar: str
     edu_stage: EduStageRes
-    description: str
+    description: Optional[str]
 
     class Config:
         orm_mode = True
@@ -220,21 +217,34 @@ class EduPhaseRes(BaseModel):
 
 class GradeCreate (BaseModel):
     name: str
-    alias: Optional[str]
-    description: Optional[str]
-    class_size: Optional[int]
-    supervisor_mail: EmailStr
     edu_phase_id: int
+    description: Optional[str]
 
 
 class GradeRes(BaseModel):
     id: int
     name: str
+    description: Optional[str]
+    edu_phase: EduPhaseRes
+
+    class Config:
+        orm_mode = True
+
+
+class ClasseCreate (BaseModel):
+    grade_id: int
+    alias: Optional[str]
+    class_size: Optional[int]
+    supervisor_mail: Optional[EmailStr]
+
+
+class ClasseRes(BaseModel):
+    id: int
     alias: str
     class_size: int
-    description: str
-    supervisor: StaffRes
-    edu_phase: EduPhaseRes
+    grade: GradeRes
+    school: SchoolRes
+    supervisor: Optional[StaffRes]
 
     class Config:
         orm_mode = True

@@ -3,7 +3,9 @@ from fastapi.security.oauth2 import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from requests import Session
-from . import gen_schemas, models
+
+from .models import gen_models
+from . import gen_schemas
 from .config import database, config
 
 SECRET_KEY = config.settings.secret_key
@@ -43,6 +45,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                           detail=f"Could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
     token = verify_access_token(token, credentials_exception)
-    user = db.query(models.User).filter(models.User.id == token.id).first()
+    user = db.query(gen_models.User).filter(
+        gen_models.User.id == token.id).first()
     print(user.firstname)
     return user
